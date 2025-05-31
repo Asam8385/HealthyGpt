@@ -1,104 +1,49 @@
-const {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} = require('@google/generative-ai');
+// To run this code you need to install the following dependencies:
+// npm install @google/genai mime
+// npm install -D @types/node
 
-// Ensure your API key is set in the environment:
-//    export GEMINI_API_KEY="AIzaSyCUGnlIXYN1Ui-kZzXPS7S3ti4XKg7pJ_s"
-const API_KEY = 'AIzaSyBmLKC8JAsN2WMM-5tKNcMkOMgDEv7FAc4';
-if (!API_KEY) {
-  throw new Error('Please set the GEMINI_API_KEY environment variable.');
-}
+import { GoogleGenAI } from '@google/genai';
 
-// Initialize the GenAI client
-const genAI = new GoogleGenerativeAI(API_KEY);
+const MODEL_NAME = 'gemma-3n-e4b-it';
 
-// Use the “gemma-3n-e4b-it” model
-const model = genAI.getGenerativeModel({ model: 'gemma-3n-e4b-it' });
-
-/**
- * Sends a conversational prompt (including history) to gemma-3n-e4b-it
- * using generateText, and returns the generated text.
- *
- * @param {string} userInput
- * @returns {Promise<string>}
- */
 async function getChatResponse(userInput) {
-  // 1. Build the conversation history as an array of Content objects:
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('Please set the GEMINI_API_KEY environment variable.');
+  }
+
+  // 1. Initialize the GenAI client
+  const ai = new GoogleGenAI({
+    apiKey: 'AIzaSyBmLKC8JAsN2WMM-5tKNcMkOMgDEv7FAc4',
+  });
+
+  // 2. Build the conversation history, appending the new user input
   const contents = [
-    {
-      role: 'user',
-      parts: [{ text: 'hel' }],
-    },
-    {
-      role: 'assistant',
-      parts: [
-        {
-          text:
-            "It seems like you might need a bit more help. 😊 \n\n" +
-            "Could you try finishing that word or telling me a bit more about what you need? \n\n" +
-            "I'm ready to listen!",
-        },
-      ],
-    },
-    // Finally, append the new user-provided message
-    {
-      role: 'user',
-      parts: [{ text: userInput }],
-    },
   ];
 
-  // 2. Generation configuration
-  const generationConfig = {
+  // 3. Configure generation settings
+  const config = {
+    responseMimeType: 'text/plain',
     temperature: 1.0,
     topK: 64,
     topP: 0.95,
     maxOutputTokens: 4096,
   };
 
-  // 3. Safety settings
-  const safetySettings = [
-    {
-      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    },
-  ];
-
-  // 4. Make the generateText call (non‐streaming)
-  const response = await model.generateText({
+  // 4. Call generateContentStream and accumulate the response
+  const responseStream = await ai.models.generateContentStream({
+    model: MODEL_NAME,
+    config,
     contents,
-    generationConfig,
-    safetySettings,
   });
 
-  // `response.generatedText` holds the model’s reply
-  return response.generatedText;
-}
-
-// Example usage
-(async () => {
-  try {
-    const reply = await getGemmaResponse("tell me a joke about computers");
-    console.log("MODEL REPLY:\n", reply);
-  } catch (err) {
-    console.error("Error during generation:", err);
+  let fullText = '';
+  for await (const chunk of responseStream) {
+    fullText += chunk.text; // Accumulate each chunk’s text
   }
-})();
 
-
+  // 5. Return the concatenated response text
+  return fullText;
+}
   
-  module.exports = { getChatResponse };
+module.exports = { getChatResponse };
   
