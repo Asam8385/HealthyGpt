@@ -6,7 +6,7 @@ const {
 
 // Ensure your API key is set in the environment:
 //    export GEMINI_API_KEY="AIzaSyCUGnlIXYN1Ui-kZzXPS7S3ti4XKg7pJ_s"
-const API_KEY = process.env.GEMINI_API_KEY;
+const API_KEY = 'AIzaSyBmLKC8JAsN2WMM-5tKNcMkOMgDEv7FAc4';
 if (!API_KEY) {
   throw new Error('Please set the GEMINI_API_KEY environment variable.');
 }
