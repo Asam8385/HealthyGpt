@@ -21,7 +21,7 @@ const model = genAI.getGenerativeModel({ model: 'gemma-3n-e4b-it' });
  * @param {string} userInput
  * @returns {Promise<string>}
  */
-async function getGemmaResponse(userInput) {
+async function getChatResponse (userInput) {
   // Build the conversation history as an array of Content objects
   const contents = [
 
