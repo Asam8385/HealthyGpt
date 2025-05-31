@@ -4,44 +4,60 @@ const {
   HarmBlockThreshold,
 } = require('@google/generative-ai');
 
-// Replace with your actual API key (or set via environment variable)
-const API_KEY = 'AIzaSyBmLKC8JAsN2WMM-5tKNcMkOMgDEv7FAc4';
+// Ensure your API key is set in the environment:
+//    export GEMINI_API_KEY="AIzaSyCUGnlIXYN1Ui-kZzXPS7S3ti4XKg7pJ_s"
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  throw new Error('Please set the GEMINI_API_KEY environment variable.');
+}
 
 // Initialize the GenAI client
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Use the “gemma-3n-e4b-it” model for streaming text generation
+// Use the “gemma-3n-e4b-it” model
 const model = genAI.getGenerativeModel({ model: 'gemma-3n-e4b-it' });
 
 /**
- * Returns a Promise that resolves to the generated text response
- * from gemma-3n-e4b-it, given a new user message. We mirror the 
- * same conversation history from your original example.
+ * Sends a conversational prompt (including history) to gemma-3n-e4b-it
+ * using generateText, and returns the generated text.
  *
  * @param {string} userInput
  * @returns {Promise<string>}
  */
-async function getChatResponse (userInput) {
-  // Build the conversation history as an array of Content objects
+async function getChatResponse(userInput) {
+  // 1. Build the conversation history as an array of Content objects:
   const contents = [
-
+    {
+      role: 'user',
+      parts: [{ text: 'hel' }],
+    },
+    {
+      role: 'assistant',
+      parts: [
+        {
+          text:
+            "It seems like you might need a bit more help. 😊 \n\n" +
+            "Could you try finishing that word or telling me a bit more about what you need? \n\n" +
+            "I'm ready to listen!",
+        },
+      ],
+    },
+    // Finally, append the new user-provided message
     {
       role: 'user',
       parts: [{ text: userInput }],
     },
   ];
 
-  // Generation configuration (you can tune these as needed)
+  // 2. Generation configuration
   const generationConfig = {
     temperature: 1.0,
     topK: 64,
     topP: 0.95,
-    // Note: maxOutputTokens 8192 may be too high for streaming in Node.
-    // You can adjust down if you run into memory/time constraints.
     maxOutputTokens: 4096,
   };
 
-  // Safety settings (same categories and thresholds as before)
+  // 3. Safety settings
   const safetySettings = [
     {
       category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -61,21 +77,27 @@ async function getChatResponse (userInput) {
     },
   ];
 
-  // Stream the response from gemma-3n-e4b-it
-  const stream = model.generateTextStream({
+  // 4. Make the generateText call (non‐streaming)
+  const response = await model.generateText({
     contents,
     generationConfig,
     safetySettings,
   });
 
-  let fullResponse = '';
-  for await (const chunk of stream) {
-    // Each chunk has a `generatedText` field containing the latest portion
-    fullResponse += chunk.generatedText;
-  }
-
-  return fullResponse;
+  // `response.generatedText` holds the model’s reply
+  return response.generatedText;
 }
+
+// Example usage
+(async () => {
+  try {
+    const reply = await getGemmaResponse("tell me a joke about computers");
+    console.log("MODEL REPLY:\n", reply);
+  } catch (err) {
+    console.error("Error during generation:", err);
+  }
+})();
+
 
   
   module.exports = { getChatResponse };
